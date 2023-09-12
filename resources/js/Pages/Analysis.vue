@@ -6,6 +6,7 @@ import { getToday } from '@/common';
 import axios from 'axios';
 import Chart from '@/Components/Chart.vue';
 import ResultTable from '@/Components/ResultTable.vue';
+import { resolvePackageData } from 'vite';
 
 onMounted(() => {
     form.startDate = getToday();
@@ -16,6 +17,9 @@ const form = reactive({
     startDate: null,
     endDate: null,
     type: 'perDay',
+    rfmPrms: [
+        14, 28, 60, 90, 7, 5, 3, 2, 300000, 200000, 100000, 30000
+    ],
 });
 
 const data = reactive({})
@@ -26,11 +30,13 @@ const getData = async () => {
             params: {
                 startDate: form.startDate,
                 endDate: form.endDate,
-                type: form.type
+                type: form.type,
+                rfmPrms: form.rfmPrms,
             }
         }).then(res => {
             data.data = res.data.data;
-            data.labels = res.data.labels;
+            if(res.data.labels){data.labels = res.data.labels};
+            if(res.data.eachCount){data.eachCount = res.data.eachCount};
             data.totals = res.data.totals;
             data.type = res.data.type;
             console.log(res.data);
@@ -64,6 +70,7 @@ const getData = async () => {
                                 <input type="radio" class="mr-1" v-model="form.type" value="perMonth"><span class="mr-4">月別</span>
                                 <input type="radio" class="mr-1" v-model="form.type" value="perYear"><span class="mr-4">年別</span>
                                 <input type="radio" class="mr-1" v-model="form.type" value="decile"><span class="mr-4">デシル分析</span>
+                                <input type="radio" class="mr-1" v-model="form.type" value="rfm"><span class="mr-4">RFM分析</span>
                             </div>
                             <br>
                             <div class="flex items-center">
@@ -71,9 +78,50 @@ const getData = async () => {
                                 To: <input type="date" name="endDate" v-model="form.endDate" class="mr-10">
                                 <button class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">分析する</button>
                             </div>
+                            <div v-if="form.type === 'rfm'">
+                                <table class="mx-auto mt-6">
+                                    <thead>
+                                        <tr>
+                                            <th>ランク</th>
+                                            <th>R (○日以内)</th>
+                                            <th>F (○回以上)</th>
+                                            <th>M (○円以上)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>5</td>
+                                            <td><input type="number" v-model="form.rfmPrms[0]"></td>
+                                            <td><input type="number" v-model="form.rfmPrms[4]"></td>
+                                            <td><input type="number" v-model="form.rfmPrms[8]"></td>
+                                        </tr>
+                                        <tr>
+                                            <td>4</td>
+                                            <td><input type="number" v-model="form.rfmPrms[1]"></td>
+                                            <td><input type="number" v-model="form.rfmPrms[5]"></td>
+                                            <td><input type="number" v-model="form.rfmPrms[9]"></td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td>
+                                            <td><input type="number" v-model="form.rfmPrms[2]"></td>
+                                            <td><input type="number" v-model="form.rfmPrms[6]"></td>
+                                            <td><input type="number" v-model="form.rfmPrms[10]"></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td><input type="number" v-model="form.rfmPrms[3]"></td>
+                                            <td><input type="number" v-model="form.rfmPrms[7]"></td>
+                                            <td><input type="number" v-model="form.rfmPrms[11]"></td>
+                                        </tr>
+
+                                    </tbody>
+                                </table>
+                            </div>
                         </form>
                         <div v-show="data.data" class="mt-6">
-                            <Chart :data="data" />
+                            <div v-if="data.type != 'rfm'">
+                                <Chart :data="data" />
+                            </div>
                         </div>
                         <ResultTable :data="data" />
                     </div>
