@@ -6,7 +6,6 @@ import { getToday } from '@/common';
 import axios from 'axios';
 import Chart from '@/Components/Chart.vue';
 import ResultTable from '@/Components/ResultTable.vue';
-import { resolvePackageData } from 'vite';
 
 onMounted(() => {
     form.startDate = getToday();

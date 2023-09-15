@@ -2,6 +2,7 @@
 
 namespace App\Services;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RFMService
 {
@@ -55,23 +56,28 @@ class RFMService
                     when ? <= monetary then 2
                     else 1 end as m
             ', $rfmPrms);
+        
+        Log::debug($subQuery->get());
 
         // 5.ランク毎の数を計算する
         $totals = DB::table($subQuery)->count();
 
-        $rCount = DB::table($subQuery) 
-            ->groupBy('r')
-            ->selectRaw('r, count(r)') 
+        $rCount = DB::table($subQuery)
+            ->rightJoin('ranks', 'ranks.rank', '=', 'r')
+            ->groupBy('rank')
+            ->selectRaw('rank as r, count(r)') 
             ->orderBy('r', 'desc')
             ->pluck('count(r)');
-        $fCount = DB::table($subQuery) 
-            ->groupBy('f')
-            ->selectRaw('f, count(f)')
+        $fCount = DB::table($subQuery)
+            ->rightJoin('ranks', 'ranks.rank', '=', 'f')
+            ->groupBy('rank')
+            ->selectRaw('rank as f, count(f)')
             ->orderBy('f', 'desc')
             ->pluck('count(f)');
-        $mCount = DB::table($subQuery) 
-            ->groupBy('m')
-            ->selectRaw('m, count(m)') 
+        $mCount = DB::table($subQuery)
+            ->rightJoin('ranks', 'ranks.rank', '=', 'm')
+            ->groupBy('rank')
+            ->selectRaw('rank as m, count(m)') 
             ->orderBy('m', 'desc')
             ->pluck('count(m)');
 
@@ -90,9 +96,10 @@ class RFMService
 
         // 6. RとFで2次元で表示してみる
         $data = DB::table($subQuery)
-            ->groupBy('r')
+            ->rightJoin('ranks', 'ranks.rank', '=', 'r')
+            ->groupBy('rank')
             ->selectRaw('
-                concat("r_", r) as rRank,
+                concat("r_", rank) as rRank,
                 count(case when f = 5 then 1 end ) as f_5,
                 count(case when f = 4 then 1 end ) as f_4,
                 count(case when f = 3 then 1 end ) as f_3,
@@ -101,7 +108,7 @@ class RFMService
             ') ->orderBy('rRank', 'desc')
             ->get();
             // concat("r_", r)はカラム`r`のそれぞれの頭に`r_`を結合している
-
+        
         return [$data, $totals, $eachCount];
     }
 }
